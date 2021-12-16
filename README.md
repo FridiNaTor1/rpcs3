@@ -1,4 +1,6 @@
-RPCS3
+This is the patChed version of RPCS3
+=====
+The patChed version just makes it possible to connect to a custom LBP server
 =====
 
 [![Azure Build Status](https://dev.azure.com/nekotekina/nekotekina/_apis/build/status/RPCS3.rpcs3?branchName=master)](https://dev.azure.com/nekotekina/nekotekina/_build?definitionId=4&branchName=master)
