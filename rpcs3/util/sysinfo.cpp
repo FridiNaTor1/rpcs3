@@ -11,6 +11,7 @@
 #include "stringapiset.h"
 #else
 #include <unistd.h>
+#include <sys/resource.h>
 #include <sys/utsname.h>
 #include <errno.h>
 #endif
@@ -135,6 +136,38 @@ bool utils::has_fma3()
 bool utils::has_fma4()
 {
 	static const bool g_value = get_cpuid(0, 0)[0] >= 0x7 && (get_cpuid(0x80000001, 0)[2] & 0x10000) == 0x10000;
+	return g_value;
+}
+
+bool utils::has_erms()
+{
+	static const bool g_value = get_cpuid(0, 0)[0] >= 0x7 && (get_cpuid(7, 0)[1] & 0x200) == 0x200;
+	return g_value;
+}
+
+bool utils::has_fsrm()
+{
+	static const bool g_value = get_cpuid(0, 0)[0] >= 0x7 && (get_cpuid(7, 0)[3] & 0x10) == 0x10;
+	return g_value;
+}
+
+u32 utils::get_rep_movsb_threshold()
+{
+	static const u32 g_value = []()
+	{
+		u32 thresh_value = 0xFFFFFFFF;
+		if (has_fsrm())
+		{
+			thresh_value = 2047;
+		}
+		else if (has_erms())
+		{
+			thresh_value = 4095;
+		}
+
+		return thresh_value;
+	}();
+
 	return g_value;
 }
 
@@ -324,6 +357,19 @@ std::string utils::get_OS_version()
 	}
 #endif
 	return output;
+}
+
+int utils::get_maxfiles()
+{
+#ifdef _WIN32
+	// Virtually unlimited on Windows
+	return INT_MAX;
+#else
+	struct rlimit limits;
+	ensure(getrlimit(RLIMIT_NOFILE, &limits) == 0);
+
+	return limits.rlim_cur;
+#endif
 }
 
 static constexpr ullong round_tsc(ullong val)
