@@ -183,9 +183,16 @@ namespace vk
 
 	driver_vendor physical_device::get_driver_vendor() const
 	{
+#ifdef __APPLE__
+		// moltenVK currently returns DRIVER_ID_MOLTENVK (0).
+		// For now, assume the vendor is moltenVK on Apple devices.
+		return driver_vendor::MVK;
+#endif
+
 		if (!driver_properties.driverID)
 		{
 			const auto gpu_name = get_name();
+
 			if (gpu_name.find("Radeon") != umax)
 			{
 				return driver_vendor::AMD;
@@ -450,6 +457,18 @@ namespace vk
 			enabled_features.alphaToOne = VK_FALSE;
 			enabled_features.shaderStorageImageMultisample = VK_FALSE;
 			enabled_features.shaderStorageImageWriteWithoutFormat = VK_FALSE;
+		}
+
+		if (!pgpu->features.shaderClipDistance)
+		{
+			rsx_log.error("Your GPU does not support shader clip distance. Graphics will not render correctly.");
+			enabled_features.shaderClipDistance = VK_FALSE;
+		}
+
+		if (!pgpu->features.shaderStorageBufferArrayDynamicIndexing)
+		{
+			rsx_log.error("Your GPU does not support shader storage buffer array dynamic indexing. Graphics will not render correctly.");
+			enabled_features.shaderStorageBufferArrayDynamicIndexing = VK_FALSE;
 		}
 
 		if (!pgpu->features.samplerAnisotropy)

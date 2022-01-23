@@ -285,8 +285,14 @@ void VKGSRender::load_texture_env()
 
 				if (replace)
 				{
-					fs_sampler_handles[i] = vk::get_resource_manager()->find_sampler(*m_device, wrap_s, wrap_t, wrap_r, false, lod_bias, af_level, min_lod, max_lod,
-						min_filter.filter, mag_filter, min_filter.mipmap_mode, border_color, compare_enabled, depth_compare_mode);
+					fs_sampler_handles[i] = vk::get_resource_manager()->get_sampler(
+						*m_device,
+						fs_sampler_handles[i],
+						wrap_s, wrap_t, wrap_r,
+						false,
+						lod_bias, af_level, min_lod, max_lod,
+						min_filter.filter, mag_filter, min_filter.mipmap_mode,
+						border_color, compare_enabled, depth_compare_mode);
 				}
 			}
 			else
@@ -338,8 +344,9 @@ void VKGSRender::load_texture_env()
 
 				if (replace)
 				{
-					vs_sampler_handles[i] = vk::get_resource_manager()->find_sampler(
+					vs_sampler_handles[i] = vk::get_resource_manager()->get_sampler(
 						*m_device,
+						vs_sampler_handles[i],
 						VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_SAMPLER_ADDRESS_MODE_REPEAT, VK_SAMPLER_ADDRESS_MODE_REPEAT,
 						unnormalized_coords,
 						0.f, 1.f, min_lod, max_lod,
@@ -799,7 +806,7 @@ void VKGSRender::emit_geometry(u32 sub_index)
 
 	const auto& binding_table = m_device->get_pipeline_binding_table();
 
-	if (sub_index == 0)
+	if (m_current_draw.subdraw_id == 0)
 	{
 		update_descriptors = true;
 
@@ -822,6 +829,7 @@ void VKGSRender::emit_geometry(u32 sub_index)
 	{
 		// Need to update descriptors; make a copy for the next draw
 		VkDescriptorSet previous_set = m_current_frame->descriptor_set.value();
+		m_current_frame->descriptor_set.flush();
 		m_current_frame->descriptor_set = allocate_descriptor_set();
 		rsx::simple_array<VkCopyDescriptorSet> copy_cmds(binding_table.total_descriptor_bindings);
 
@@ -856,7 +864,7 @@ void VKGSRender::emit_geometry(u32 sub_index)
 		m_program->bind_uniform(m_vertex_layout_storage->value, binding_table.vertex_buffers_first_bind_slot + 2, m_current_frame->descriptor_set);
 	}
 
-	bool reload_state = (!m_current_subdraw_id++);
+	bool reload_state = (!m_current_draw.subdraw_id++);
 	vk::renderpass_op(*m_current_command_buffer, [&](VkCommandBuffer cmd, VkRenderPass pass, VkFramebuffer fbo)
 	{
 		if (get_render_pass() == pass && m_draw_fbo->value == fbo)
@@ -1067,8 +1075,8 @@ void VKGSRender::end()
 	// Final heap check...
 	check_heap_status(VK_HEAP_CHECK_VERTEX_STORAGE | VK_HEAP_CHECK_VERTEX_LAYOUT_STORAGE);
 
-	u32 sub_index = 0;
-	m_current_subdraw_id = 0;
+	u32 sub_index = 0;               // RSX subdraw ID
+	m_current_draw.subdraw_id = 0;   // Host subdraw ID. Invalid RSX subdraws do not increment this value
 
 	rsx::method_registers.current_draw_clause.begin();
 	do
