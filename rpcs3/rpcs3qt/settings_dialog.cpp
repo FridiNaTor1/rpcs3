@@ -209,6 +209,9 @@ settings_dialog::settings_dialog(std::shared_ptr<gui_settings> gui_settings, std
 	m_emu_settings->EnhanceCheckBox(ui->accurateXFloat, emu_settings_type::AccurateXFloat);
 	SubscribeTooltip(ui->accurateXFloat, tooltips.settings.accurate_xfloat);
 
+	m_emu_settings->EnhanceCheckBox(ui->approximateXFloat, emu_settings_type::ApproximateXFloat);
+	SubscribeTooltip(ui->approximateXFloat, tooltips.settings.approximate_xfloat);
+
 	m_emu_settings->EnhanceCheckBox(ui->fullWidthAVX512, emu_settings_type::FullWidthAVX512);
 	SubscribeTooltip(ui->fullWidthAVX512, tooltips.settings.full_width_avx512);
 	ui->fullWidthAVX512->setEnabled(utils::has_avx512());
@@ -512,7 +515,7 @@ settings_dialog::settings_dialog(std::shared_ptr<gui_settings> gui_settings, std
 	ui->shaderCompilerThreads->setItemText(ui->shaderCompilerThreads->findData(0), tr("Auto", "Number of Shader Compiler Threads"));
 
 	// Custom control that simplifies operation of two independent variables. Can probably be done better but this works.
-	ui->zcullPrecisionMode->addItem(tr("Precise (Default)"), static_cast<int>(zcull_precision_level::precise));
+	ui->zcullPrecisionMode->addItem(tr("Precise (Slowest)"), static_cast<int>(zcull_precision_level::precise));
 	ui->zcullPrecisionMode->addItem(tr("Approximate (Fast)"), static_cast<int>(zcull_precision_level::approximate));
 	ui->zcullPrecisionMode->addItem(tr("Relaxed (Fastest)"), static_cast<int>(zcull_precision_level::relaxed));
 
